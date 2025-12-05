@@ -1,0 +1,1036 @@
+<!DOCTYPE html>
+<html lang="ca" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>LímitMaster: Arcade Edition</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Function Plot -->
+    <script src="https://unpkg.com/d3@3/d3.min.js"></script>
+    <script src="https://unpkg.com/function-plot@1/dist/function-plot.js"></script>
+    
+    <!-- MathJax -->
+    <script>
+        window.MathJax = {
+            tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
+            svg: { fontCache: 'global' }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <!-- Tailwind Config -->
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        game: {
+                            primary: '#6366f1',
+                            secondary: '#8b5cf6',
+                            accent: '#f43f5e',
+                            success: '#10b981',
+                            error: '#ef4444',
+                            dark: '#0f172a',
+                            surface: '#1e293b'
+                        }
+                    },
+                    animation: {
+                        'bounce-short': 'bounce-short 0.5s ease-in-out 1',
+                        'shake': 'shake 0.5s cubic-bezier(.36,.07,.19,.97) both',
+                        'pop': 'pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                        'float': 'float 3s ease-in-out infinite',
+                        'wave': 'wave 2s infinite',
+                        'slide-out': 'slideOut 0.3s ease-in forwards',
+                        'slide-in': 'slideIn 0.3s ease-out forwards',
+                        'pulse-glow': 'pulseGlow 2s infinite'
+                    },
+                    keyframes: {
+                        'bounce-short': {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-10px)' },
+                        },
+                        'shake': {
+                            '10%, 90%': { transform: 'translate3d(-1px, 0, 0)' },
+                            '20%, 80%': { transform: 'translate3d(2px, 0, 0)' },
+                            '30%, 50%, 70%': { transform: 'translate3d(-4px, 0, 0)' },
+                            '40%, 60%': { transform: 'translate3d(4px, 0, 0)' }
+                        },
+                        'pop': {
+                            '0%': { transform: 'scale(0.8)', opacity: '0' },
+                            '100%': { transform: 'scale(1)', opacity: '1' }
+                        },
+                        'float': {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-10px)' }
+                        },
+                        'wave': {
+                            '0%, 100%': { transform: 'rotate(0deg)' },
+                            '25%': { transform: 'rotate(-10deg)' },
+                            '75%': { transform: 'rotate(10deg)' }
+                        },
+                        'slideOut': {
+                            '0%': { transform: 'translateX(0)', opacity: '1' },
+                            '100%': { transform: 'translateX(-50px)', opacity: '0' }
+                        },
+                        'slideIn': {
+                            '0%': { transform: 'translateX(50px)', opacity: '0' },
+                            '100%': { transform: 'translateX(0)', opacity: '1' }
+                        },
+                        'pulseGlow': {
+                            '0%, 100%': { boxShadow: '0 0 5px #8b5cf6' },
+                            '50%': { boxShadow: '0 0 20px #8b5cf6, 0 0 10px #f43f5e' }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600&family=JetBrains+Mono:wght@500&display=swap');
+        
+        body { font-family: 'Fredoka', sans-serif; }
+        .math-font { font-family: 'JetBrains Mono', monospace; }
+
+        /* --- SOPHISTICATED TEACHER CSS --- */
+        .teacher-container { position: relative; width: 120px; height: 160px; }
+        
+        /* Head with gradient for depth */
+        .teacher-head {
+            width: 80px; height: 90px; 
+            background: linear-gradient(135deg, #f5d0b0 0%, #e6b89c 100%);
+            border-radius: 25px; position: absolute; top: 0; left: 20px;
+            border: 3px solid #1f2937; box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+            transition: all 0.3s ease; z-index: 10;
+        }
+
+        /* Hair with more volume/detail */
+        .teacher-hair { 
+            position: absolute; top: -12px; left: -8px; width: 96px; height: 45px; 
+            background: linear-gradient(to bottom, #5D4037, #4e342e); 
+            border-radius: 30px 30px 10px 10px; border: 3px solid #1f2937; z-index: 12; 
+        }
+        /* Cowlick / Tuft */
+        .teacher-hair-detail { 
+            position: absolute; top: -8px; right: 20px; width: 25px; height: 25px; 
+            background: #5D4037; border-radius: 50% 50% 0 50%; 
+            border: 3px solid #1f2937; border-bottom: none; z-index: 13; 
+        }
+
+        /* Face Features */
+        .teacher-ear {
+            position: absolute; top: 40px; width: 12px; height: 18px; 
+            background: #e6b89c; border: 3px solid #1f2937; border-radius: 50%; z-index: 9;
+        }
+        .teacher-ear.left { left: -6px; border-right: none; }
+        .teacher-ear.right { right: -6px; border-left: none; }
+
+        .teacher-nose {
+            position: absolute; top: 52px; left: 35px; width: 10px; height: 8px;
+            border-bottom: 3px solid #1f2937; border-radius: 50%; opacity: 0.6;
+        }
+
+        /* Omitted for brevity... */
+        .teacher-eyebrow {
+            position: absolute; top: 32px; width: 18px; height: 4px; background: #3e2723; border-radius: 2px; z-index: 15; transition: all 0.3s;
+        }
+        .teacher-eyebrow.left { left: 15px; }
+        .teacher-eyebrow.right { right: 15px; }
+
+        /* Eyes */
+        .teacher-eyes .eye { 
+            position: absolute; top: 45px; width: 8px; height: 8px; 
+            background: #1f2937; border-radius: 50%; z-index: 13; 
+        }
+        .teacher-eyes .eye.left { left: 20px; }
+        .teacher-eyes .eye.right { right: 20px; }
+        
+        /* Beard */
+        .teacher-beard { 
+            position: absolute; bottom: -2px; left: -2px; width: 84px; height: 35px; 
+            background: #5D4037; border-bottom-left-radius: 25px; border-bottom-right-radius: 25px; 
+            border: 3px solid #1f2937; border-top: none; z-index: 13; 
+        }
+        
+        /* Mouth */
+        .teacher-mouth { 
+            position: absolute; bottom: 12px; left: 30px; width: 20px; height: 8px; 
+            border-bottom: 3px solid white; border-radius: 0 0 20px 20px; z-index: 14; transition: all 0.3s; 
+        }
+        
+        /* Expressions */
+        .teacher-happy .teacher-mouth { height: 14px; border-bottom-width: 5px; }
+        .teacher-happy .teacher-eyebrow { top: 28px; }
+        .teacher-sad .teacher-mouth { bottom: 10px; border-bottom: none; border-top: 4px solid white; border-radius: 20px 20px 0 0; }
+        .teacher-sad .teacher-eyebrow.left { transform: rotate(-15deg); top: 34px; }
+        .teacher-sad .teacher-eyebrow.right { transform: rotate(15deg); top: 34px; }
+
+        /* Body (Suit) */
+        .teacher-body {
+            position: absolute; top: 85px; left: 25px; width: 70px; height: 60px;
+            background: linear-gradient(to right, #4338ca, #3730a3); /* Indigo suit */
+            border: 3px solid #1f2937; border-radius: 10px; z-index: 5; overflow: hidden;
+        }
+        /* Shirt triangle */
+        .teacher-shirt {
+            position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+            width: 0; height: 0; 
+            border-left: 15px solid transparent; border-right: 15px solid transparent; border-top: 25px solid white;
+            z-index: 6;
+        }
+        /* Tie */
+        .teacher-tie {
+            position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+            width: 8px; height: 30px; background: #ef4444; 
+            border: 1px solid #991b1b; border-top: none; z-index: 7;
+        }
+        /* Lapels */
+        .teacher-lapel-left {
+            position: absolute; top: 0; left: 0; width: 20px; height: 40px;
+            border-right: 2px solid #312e81; background: rgba(0,0,0,0.1);
+        }
+        .teacher-lapel-right {
+            position: absolute; top: 0; right: 0; width: 20px; height: 40px;
+            border-left: 2px solid #312e81; background: rgba(0,0,0,0.1);
+        }
+
+        /* Arms */
+        .teacher-arm-left, .teacher-arm-right {
+            position: absolute; top: 90px; width: 22px; height: 50px;
+            background: #4338ca; border: 3px solid #1f2937; border-radius: 12px; z-index: 4;
+        }
+        .teacher-arm-left { left: 10px; transform: rotate(10deg); }
+        .teacher-arm-right { right: 10px; transform: rotate(-10deg); }
+        .waving .teacher-arm-right { transform-origin: top center; animation: wave 1s infinite ease-in-out; right: 0px; top: 85px; }
+
+        /* --- COSMETICS --- */
+        .teacher-glasses { position: absolute; top: 35px; left: 8px; width: 64px; height: 20px; z-index: 14; display: flex; justify-content: space-between; }
+        .glass { width: 28px; height: 28px; border: 3px solid #1f2937; border-radius: 50%; background: rgba(255,255,255,0.3); box-shadow: inset 0 0 5px rgba(255,255,255,0.8); position: relative; }
+        .glass-bridge { position: absolute; left: 26px; top: 12px; width: 12px; height: 4px; background: #1f2937; }
+        
+        .glasses-sun .glass { background: #111; border-color: #000; opacity: 1; }
+        .glasses-future .glass { border-radius: 2px; background: rgba(14, 165, 233, 0.6); border: 2px solid #0ea5e9; }
+        
+        .hat-tophat { position: absolute; top: -50px; left: 10px; width: 60px; height: 50px; background: #222; border: 3px solid #000; z-index: 20; }
+        .hat-tophat::after { content: ''; position: absolute; bottom: -3px; left: -10px; width: 80px; height: 8px; background: #222; border: 3px solid #000; border-radius: 4px; }
+        
+        .hat-cap { position: absolute; top: -12px; left: 5px; width: 70px; height: 35px; background: #ef4444; border: 3px solid #000; border-radius: 30px 30px 0 0; z-index: 20; }
+        .hat-cap::after { content: ''; position: absolute; bottom: 2px; right: -15px; width: 35px; height: 8px; background: #ef4444; border: 3px solid #000; border-left: none; transform: rotate(5deg); }
+
+        .scarf-blue { position: absolute; bottom: -5px; left: -5px; width: 90px; height: 25px; background: #3b82f6; border: 3px solid #000; border-radius: 10px; z-index: 15; box-shadow: 0 4px 5px rgba(0,0,0,0.2); }
+        .scarf-stripe { position: absolute; bottom: -5px; left: -5px; width: 90px; height: 25px; background: repeating-linear-gradient(45deg, #facc15, #facc15 10px, #000 10px, #000 12px); border: 3px solid #000; border-radius: 10px; z-index: 15; }
+
+        /* Speech Bubble */
+        .speech-bubble { position: absolute; bottom: 120px; left: -20px; background: white; color: #1f2937; padding: 12px 18px; border-radius: 20px; border-bottom-left-radius: 2px; font-size: 0.95rem; font-weight: 600; width: 190px; box-shadow: 4px 4px 0px rgba(0,0,0,0.2); border: 3px solid #1f2937; opacity: 0; transform: translateY(10px) scale(0.9); transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); pointer-events: none; z-index: 30; }
+        .speech-bubble.visible { opacity: 1; transform: translateY(0) scale(1); }
+        .dark .speech-bubble { background: #334155; color: #f8fafc; border-color: #f8fafc; box-shadow: 4px 4px 0px rgba(255,255,255,0.1); }
+
+        /* Utilities */
+        #feedback-graph { width: 100%; height: 250px; background: white; border-radius: 1rem; margin-top: 1rem; overflow: hidden; border: 2px solid #e2e8f0; }
+        .dark #feedback-graph { border-color: #475569; filter: invert(1) hue-rotate(180deg); }
+        .function-plot { font-family: inherit; }
+        .glass-panel { background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.5); }
+        .dark .glass-panel { background: rgba(30, 41, 59, 0.7); border: 1px solid rgba(255, 255, 255, 0.1); }
+        .hidden-screen { display: none; }
+    </style>
+</head>
+<body class="bg-indigo-50 text-slate-800 dark:bg-game-dark dark:text-gray-100 min-h-screen flex flex-col overflow-x-hidden transition-colors duration-300">
+
+    <!-- Fons -->
+    <div class="fixed inset-0 z-0 opacity-30 pointer-events-none overflow-hidden">
+        <div class="absolute top-10 left-10 w-32 h-32 bg-purple-400 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-float"></div>
+        <div class="absolute top-0 right-20 w-48 h-48 bg-yellow-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-float" style="animation-delay: 1s"></div>
+        <div class="absolute -bottom-8 left-20 w-48 h-48 bg-pink-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-float" style="animation-delay: 2s"></div>
+    </div>
+
+    <!-- Header -->
+    <header class="relative z-10 w-full p-4 flex justify-between items-center max-w-4xl mx-auto">
+        <div class="flex items-center gap-2 cursor-pointer group" onclick="goMenu()" title="Tornar al menú">
+            <div class="w-8 h-8 bg-game-primary rounded-lg flex items-center justify-center text-white font-bold text-xl shadow-lg group-hover:scale-110 transition-transform">L</div>
+            <h1 class="text-2xl font-bold tracking-tight group-hover:text-game-primary transition-colors">Límit<span class="text-game-primary group-hover:text-slate-800 dark:group-hover:text-white">Arcade</span></h1>
+        </div>
+        <div class="flex items-center gap-3">
+            <div class="bg-yellow-100 dark:bg-yellow-900 px-3 py-1 rounded-full flex items-center gap-1 border border-yellow-300">
+                <span>⭐</span>
+                <span id="user-coins" class="font-bold text-yellow-700 dark:text-yellow-300">0</span>
+            </div>
+            <button id="theme-toggle" class="p-2 rounded-full bg-white dark:bg-slate-700 shadow-md hover:scale-105 transition-transform">
+                <span class="dark:hidden">☀️</span>
+                <span class="hidden dark:inline">🌙</span>
+            </button>
+        </div>
+    </header>
+
+    <main class="relative z-10 flex-grow flex flex-col items-center justify-center p-4 w-full max-w-2xl mx-auto">
+        
+        <!-- ================= MENÚ PRINCIPAL ================= -->
+        <section id="menu-screen" class="w-full text-center animate-pop">
+            
+            <div class="flex justify-center mb-6">
+                <div class="teacher-container waving scale-125 teacher-visual-root"></div>
+            </div>
+
+            <div class="mb-4">
+                <h2 class="text-3xl font-bold mb-2">Entrenament de Càlcul</h2>
+                <div class="flex justify-center gap-2">
+                    <button onclick="openShop()" class="bg-indigo-100 text-indigo-700 px-4 py-2 rounded-full font-bold hover:bg-indigo-200 transition text-sm flex items-center gap-1">
+                        🛍️ Botiga de Cosmètics
+                    </button>
+                </div>
+            </div>
+            
+            <div class="grid gap-3 w-full max-w-md mx-auto">
+                <button onclick="startGame('direct')" class="p-4 bg-white dark:bg-slate-800 rounded-2xl shadow-md hover:shadow-lg border-l-4 border-green-400 text-left transition hover:-translate-y-1">
+                    <div class="font-bold text-green-600 dark:text-green-400">Nivell 1: Directe</div>
+                    <div class="text-xs text-slate-500">Substitució, $e^x$, $\ln(x)$ (10 preguntes)</div>
+                </button>
+                <button onclick="startGame('indeterminate')" class="p-4 bg-white dark:bg-slate-800 rounded-2xl shadow-md hover:shadow-lg border-l-4 border-yellow-400 text-left transition hover:-translate-y-1">
+                    <div class="font-bold text-yellow-600 dark:text-yellow-400">Nivell 2: Indeterminacions</div>
+                    <div class="text-xs text-slate-500">Ruffini i graus (10 preguntes)</div>
+                </button>
+                <button onclick="startGame('continuity')" class="p-4 bg-white dark:bg-slate-800 rounded-2xl shadow-md hover:shadow-lg border-l-4 border-blue-400 text-left transition hover:-translate-y-1">
+                    <div class="font-bold text-blue-600 dark:text-blue-400">Nivell 3: Continuitat</div>
+                    <div class="text-xs text-slate-500">Gràfic interactiu (10 preguntes)</div>
+                </button>
+                <button onclick="startGame('discontinuity')" class="p-4 bg-white dark:bg-slate-800 rounded-2xl shadow-md hover:shadow-lg border-l-4 border-purple-400 text-left transition hover:-translate-y-1">
+                    <div class="font-bold text-purple-600 dark:text-purple-400">Nivell 4: Tipus de Salt</div>
+                    <div class="text-xs text-slate-500">Classificació visual (10 preguntes)</div>
+                </button>
+                <button onclick="startGame('parameter')" class="p-4 bg-white dark:bg-slate-800 rounded-2xl shadow-md hover:shadow-lg border-l-4 border-orange-500 text-left transition hover:-translate-y-1">
+                    <div class="font-bold text-orange-600 dark:text-orange-400">Nivell 5: Troba el Paràmetre</div>
+                    <div class="text-xs text-slate-500">Troba $k$ per la continuïtat (10 preguntes)</div>
+                </button>
+                <button onclick="startGame('endless')" class="p-4 bg-gradient-to-r from-red-50 to-white dark:from-slate-800 dark:to-slate-800 rounded-2xl shadow-md hover:shadow-lg border-l-4 border-red-500 text-left transition hover:-translate-y-1">
+                    <div class="font-bold text-red-600 dark:text-red-400 flex justify-between">
+                        <span>Mode Infinit</span>
+                        <span class="text-xs bg-red-100 px-2 rounded">Rècord: <span id="menu-high-score">0</span></span>
+                    </div>
+                </button>
+            </div>
+        </section>
+
+        <!-- ================= BOTIGA ================= -->
+        <section id="shop-screen" class="hidden-screen w-full animate-pop">
+            <div class="glass-panel rounded-3xl p-6 mb-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold">Botiga del Professor</h2>
+                    <button onclick="goMenu()" class="text-sm bg-slate-200 dark:bg-slate-700 px-3 py-1 rounded-lg">Tancar</button>
+                </div>
+                <div class="flex justify-center mb-8">
+                    <div class="teacher-container teacher-visual-root scale-110"></div>
+                </div>
+                <div id="shop-items" class="grid grid-cols-2 md:grid-cols-3 gap-4"></div>
+            </div>
+        </section>
+
+        <!-- ================= PANTALLA DE JOC ================= -->
+        <section id="game-screen" class="hidden-screen w-full relative">
+            <div class="flex justify-between items-center absolute -top-12 w-full px-2">
+                <button onclick="exitGame()" class="bg-red-100 dark:bg-red-900/30 text-red-500 text-xs font-bold px-3 py-1 rounded-full hover:bg-red-200 transition-colors flex items-center gap-1">MENÚ</button>
+            </div>
+
+            <!-- HUD -->
+            <div class="flex justify-between items-end mb-4 px-2">
+                <div>
+                    <div class="text-xs font-bold text-slate-400 uppercase tracking-widest">Progrés</div>
+                    <div class="flex items-center gap-2">
+                        <div id="progress-container" class="w-32 h-3 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden shadow-inner">
+                            <div id="progress-bar" class="h-full bg-gradient-to-r from-game-primary to-game-secondary transition-all duration-500" style="width: 0%"></div>
+                        </div>
+                        <div id="endless-score-display" class="hidden font-mono font-black text-game-accent text-xl">
+                            <span id="endless-current">0</span> pts
+                        </div>
+                        <span id="question-counter" class="text-sm font-bold font-mono">1/10</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Targeta Principal -->
+            <div id="question-card" class="glass-panel rounded-3xl p-1 shadow-2xl mb-6">
+                <div class="bg-white dark:bg-slate-800 rounded-[1.3rem] p-6 md:p-10 text-center relative overflow-hidden min-h-[220px] flex flex-col items-center justify-center">
+                    <div id="math-container" class="text-xl md:text-3xl text-slate-800 dark:text-white my-4 math-font py-2 overflow-x-auto max-w-full"></div>
+                    
+                    <div id="graph-container" class="hidden w-full flex justify-center">
+                        <div id="feedback-graph"></div>
+                    </div>
+                    
+                    <button id="next-q-btn" onclick="nextQuestion()" class="hidden mt-4 bg-game-primary text-white px-6 py-2 rounded-full font-bold shadow-lg animate-bounce-short">Següent ➜</button>
+
+                    <!-- ASSISTENT JOC -->
+                    <div class="absolute bottom-0 left-2 md:left-6 transform scale-75 origin-bottom-left z-20">
+                        <div id="robot-bubble" class="speech-bubble">Hola!</div>
+                        <div class="teacher-container teacher-visual-root" style="height: 100px;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- INPUTS -->
+            <div class="mt-8 w-full max-w-md mx-auto relative min-h-[140px]">
+                <div id="input-area" class="flex flex-col gap-4">
+                    <div class="relative">
+                        <input type="text" id="user-answer" placeholder="?" autocomplete="off" class="w-full p-4 pl-6 rounded-2xl border-4 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-2xl font-mono text-center focus:border-game-primary outline-none transition-all shadow-sm">
+                        <div class="absolute right-4 top-1/2 transform -translate-y-1/2 text-slate-400 text-xs font-bold hidden md:block">ENTER</div>
+                    </div>
+                    <div id="quick-keys" class="flex gap-2 justify-center overflow-x-auto pb-2">
+                        <button onclick="addInput('e')" class="bg-slate-200 px-3 py-1 rounded text-sm">e</button>
+                        <button onclick="addInput('ln')" class="bg-slate-200 px-3 py-1 rounded text-sm">ln</button>
+                        <button onclick="addInput('inf')" class="bg-slate-200 px-3 py-1 rounded text-sm">inf</button>
+                        <button onclick="addInput('-inf')" class="bg-slate-200 px-3 py-1 rounded text-sm">-inf</button>
+                        <button onclick="addInput('/')" class="bg-slate-200 px-3 py-1 rounded text-sm">/</button>
+                        <button onclick="addInput('0')" class="bg-slate-200 px-3 py-1 rounded text-sm">0</button>
+                        <button onclick="addInput('-')" class="bg-slate-200 px-3 py-1 rounded text-sm">-</button>
+                    </div>
+                    <button onclick="submitAnswer()" class="w-full bg-game-primary text-white font-black py-4 rounded-2xl shadow-lg">COMPROVAR</button>
+                </div>
+
+                <div id="binary-choice-area" class="hidden grid grid-cols-2 gap-6">
+                     <button onclick="submitChoice('yes', this)" class="choice-btn p-8 rounded-2xl bg-green-50 border-4 border-green-200 font-black text-3xl text-green-700">SÍ</button>
+                    <button onclick="submitChoice('no', this)" class="choice-btn p-8 rounded-2xl bg-red-50 border-4 border-red-200 font-black text-3xl text-red-700">NO</button>
+                </div>
+
+                <div id="choice-area" class="hidden grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <button onclick="submitChoice('evitable', this)" class="choice-btn p-4 rounded-xl bg-white border-2 border-slate-200 font-bold text-slate-700">Evitable</button>
+                    <button onclick="submitChoice('salt_finit', this)" class="choice-btn p-4 rounded-xl bg-white border-2 border-slate-200 font-bold text-slate-700">Salt Finit</button>
+                    <button onclick="submitChoice('salt_infinit', this)" class="choice-btn p-4 rounded-xl bg-white border-2 border-slate-200 font-bold text-slate-700">Salt Infinit</button>
+                    <button onclick="submitChoice('2a_especie', this)" class="choice-btn p-4 rounded-xl bg-white border-2 border-slate-200 font-bold text-slate-700">2a Espècie</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- PANTALLA RESULTATS -->
+        <section id="result-screen" class="hidden-screen w-full text-center animate-pop">
+             <div class="glass-panel rounded-3xl p-8 md:p-12 max-w-md mx-auto relative overflow-hidden">
+                <div class="relative z-10">
+                    <div id="final-emoji" class="text-7xl mb-4">🏆</div>
+                    <h2 id="result-title" class="text-3xl font-black mb-1">FINAL</h2>
+                    <div id="stars-container" class="flex justify-center gap-2 text-4xl mb-4 h-12"></div>
+                    <div class="flex justify-center gap-4 mb-8">
+                        <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl shadow-sm min-w-[100px]">
+                            <div class="text-xs text-slate-400 font-bold uppercase">Punts</div>
+                            <div class="text-3xl font-black text-game-primary"><span id="final-score">0</span>/10</div>
+                        </div>
+                        <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl shadow-sm min-w-[100px] border-2 border-yellow-300">
+                            <div class="text-xs text-yellow-600 font-bold uppercase">Guanys</div>
+                            <div class="text-3xl font-black text-yellow-500">+<span id="earned-coins">0</span></div>
+                        </div>
+                    </div>
+                    <button onclick="goMenu()" class="bg-slate-200 text-slate-700 w-full py-3 rounded-xl font-bold">Tornar al Menú</button>
+                </div>
+            </div>
+        </section>
+    </main>
+    
+    <!-- FIX: Carreguem mathjs aquí per assegurar que 'math' estigui disponible abans que s'executi el codi del joc. -->
+    <!-- FIX: Actualitzat de v10.0.0 a v11.11.0 per resoldre problemes d'avaluació amb funcions com 'log'. -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.11.0/math.min.js"></script>
+
+    <script>
+        const state = {
+            currentMode: null, currentQuestionIndex: 0, score: 0, streak: 0, questions: [], totalQuestions: 10,
+            isLocked: false, endlessHighScore: localStorage.getItem('limitMaster_highScore') || 0,
+            coins: parseInt(localStorage.getItem('limitMaster_coins')) || 0,
+            inventory: JSON.parse(localStorage.getItem('limitMaster_inventory')) || [],
+            equipped: JSON.parse(localStorage.getItem('limitMaster_equipped')) || { hat: null, glasses: 'default', scarf: null }
+        };
+
+        const SHOP_ITEMS = [
+            { id: 'glasses-sun', type: 'glasses', name: 'Ulleres de Sol', price: 5, icon: '🕶️' },
+            { id: 'glasses-future', type: 'glasses', name: 'Ulleres Ciber', price: 10, icon: '🥽' },
+            { id: 'hat-tophat', type: 'hat', name: 'Barret de Copa', price: 15, icon: '🎩' },
+            { id: 'hat-cap', type: 'hat', name: 'Gorra Vermella', price: 8, icon: '🧢' },
+            { id: 'scarf-blue', type: 'scarf', name: 'Bufanda Blava', price: 5, icon: '🧣' },
+            { id: 'scarf-stripe', type: 'scarf', name: 'Bufanda Ratlles', price: 12, icon: '🧣' }
+        ];
+
+        // --- INIT & TEACHER RENDER ---
+        updateCurrencyUI();
+        renderTeacherVisuals();
+
+        function renderTeacherVisuals() {
+            const teacherHTML = `
+                <div id="teacher-head" class="teacher-head">
+                    <div class="teacher-hair"></div><div class="teacher-hair-detail"></div>
+                    <div class="teacher-ear left"></div><div class="teacher-ear right"></div>
+                    ${state.equipped.hat ? `<div class="${state.equipped.hat}"></div>` : ''}
+                    <div class="teacher-eyebrow left"></div><div class="teacher-eyebrow right"></div>
+                    <div class="teacher-eyes"><div class="eye left"></div><div class="eye right"></div></div>
+                    <div class="teacher-nose"></div>
+                    <div class="teacher-glasses ${state.equipped.glasses}">
+                        <div class="glass"></div><div class="glass-bridge"></div><div class="glass"></div>
+                    </div>
+                    <div class="teacher-beard"></div><div class="teacher-mouth"></div>
+                </div>
+                <div class="teacher-body">
+                    <div class="teacher-shirt"></div>
+                    <div class="teacher-tie"></div>
+                    <div class="teacher-lapel-left"></div><div class="teacher-lapel-right"></div>
+                </div>
+                ${state.equipped.scarf ? `<div class="${state.equipped.scarf}"></div>` : ''}
+                <div class="teacher-arm-left"></div><div class="teacher-arm-right"></div>
+            `;
+            document.querySelectorAll('.teacher-visual-root').forEach(el => el.innerHTML = teacherHTML);
+        }
+
+        const robot = {
+            bubble: document.getElementById('robot-bubble'),
+            say: (text, duration = 3000) => {
+                robot.bubble.textContent = text; robot.bubble.classList.add('visible');
+                setTimeout(() => robot.bubble.classList.remove('visible'), duration);
+            },
+            setMood: (mood) => {
+                document.querySelectorAll('.teacher-head').forEach(h => {
+                    h.classList.remove('teacher-happy', 'teacher-sad');
+                    if(mood !== 'neutral') h.classList.add(`teacher-${mood}`);
+                });
+            }
+        };
+
+        // --- SHOP & COINS ---
+        function updateCurrencyUI() { document.getElementById('user-coins').textContent = state.coins; }
+        function openShop() { document.getElementById('menu-screen').classList.add('hidden-screen'); document.getElementById('shop-screen').classList.remove('hidden-screen'); renderShop(); }
+        function renderShop() {
+            const container = document.getElementById('shop-items'); container.innerHTML = '';
+            SHOP_ITEMS.forEach(item => {
+                const owned = state.inventory.includes(item.id); const equipped = state.equipped[item.type] === item.id;
+                let btnAction = equipped ? `<button class="w-full py-1 bg-green-100 text-green-700 rounded text-sm font-bold" disabled>Equipat</button>` :
+                                owned ? `<button onclick="equipItem('${item.id}', '${item.type}')" class="w-full py-1 bg-indigo-100 text-indigo-700 hover:bg-indigo-200 rounded text-sm font-bold">Equipar</button>` :
+                                `<button onclick="buyItem('${item.id}', ${item.price})" class="w-full py-1 ${state.coins >= item.price ? 'bg-yellow-100 hover:bg-yellow-200 text-yellow-800' : 'bg-gray-100 text-gray-400'} rounded text-sm font-bold" ${state.coins < item.price ? 'disabled' : ''}>Comprar ${item.price}⭐</button>`;
+                const div = document.createElement('div');
+                div.className = "bg-white dark:bg-slate-700 p-4 rounded-xl shadow border border-slate-100 dark:border-slate-600 flex flex-col items-center gap-2";
+                div.innerHTML = `<div class="text-3xl">${item.icon}</div><div class="font-bold text-sm">${item.name}</div>${btnAction}`;
+                container.appendChild(div);
+            });
+        }
+        function buyItem(id, price) { if(state.coins >= price) { state.coins -= price; state.inventory.push(id); saveData(); renderShop(); updateCurrencyUI(); } }
+        function equipItem(id, type) { state.equipped[type] = id; saveData(); renderTeacherVisuals(); renderShop(); }
+        function saveData() { localStorage.setItem('limitMaster_coins', state.coins); localStorage.setItem('limitMaster_inventory', JSON.stringify(state.inventory)); localStorage.setItem('limitMaster_equipped', JSON.stringify(state.equipped)); }
+
+        // --- GAME LOGIC ---
+        function generateUniqueQuestion(mode, currentList) {
+            let limit = 20; let q;
+            do {
+                if(mode === 'direct') q = generateDirectLimit();
+                else if(mode === 'indeterminate') q = generateIndeterminateLimit();
+                else if(mode === 'continuity') q = generateContinuityCheck();
+                else if(mode === 'discontinuity') q = generateDiscontinuityProblem();
+                else if(mode === 'parameter') q = generateParameterProblem();
+                const isDup = currentList.some(exist => exist.latex === q.latex);
+                if(!isDup) return q;
+                limit--;
+            } while (limit > 0);
+            return q; 
+        }
+
+        function startGame(mode) {
+            state.currentMode = mode; state.score = 0; state.currentQuestionIndex = 0; state.questions = []; state.isLocked = false;
+            state.totalQuestions = (mode === 'endless') ? 999 : 10; 
+
+            if(mode === 'discontinuity') {
+                const baseTypes = ['evitable', 'salt_finit', 'salt_infinit', '2a_especie'];
+                const typesToGen = [...baseTypes];
+                for(let i=0; i<6; i++) typesToGen.push(baseTypes[Math.floor(Math.random()*4)]);
+                for (let i = typesToGen.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [typesToGen[i], typesToGen[j]] = [typesToGen[j], typesToGen[i]]; }
+                for(let type of typesToGen) {
+                    let q; let attempts = 10;
+                    do { q = generateDiscontinuityProblem(type); if(!state.questions.some(exist => exist.latex === q.latex)) break; attempts--; } while(attempts > 0);
+                    state.questions.push(q);
+                }
+            } else if(mode === 'endless') { state.questions.push(generateEndlessQuestion()); } 
+            else { for(let i=0; i<10; i++) state.questions.push(generateUniqueQuestion(mode, state.questions)); }
+            
+            document.getElementById('menu-screen').classList.add('hidden-screen');
+            document.getElementById('shop-screen').classList.add('hidden-screen');
+            document.getElementById('result-screen').classList.add('hidden-screen');
+            document.getElementById('game-screen').classList.remove('hidden-screen');
+            
+            if(mode === 'endless') { document.getElementById('progress-container').classList.add('hidden'); document.getElementById('question-counter').classList.add('hidden'); document.getElementById('endless-score-display').classList.remove('hidden'); } 
+            else { document.getElementById('progress-container').classList.remove('hidden'); document.getElementById('question-counter').classList.remove('hidden'); document.getElementById('endless-score-display').classList.add('hidden'); }
+            loadQuestion();
+        }
+
+        function loadQuestion() {
+            state.isLocked = false; const q = state.questions[state.currentQuestionIndex];
+            document.getElementById('graph-container').classList.add('hidden'); document.getElementById('feedback-graph').innerHTML = ""; 
+            document.getElementById('next-q-btn').classList.add('hidden'); document.getElementById('robot-bubble').classList.remove('visible');
+            
+            if(state.currentMode === 'endless') document.getElementById('endless-current').textContent = state.score;
+            else { document.getElementById('question-counter').textContent = `${state.currentQuestionIndex+1}/${state.totalQuestions}`; document.getElementById('progress-bar').style.width = `${(state.currentQuestionIndex/state.totalQuestions)*100}%`; }
+
+            document.getElementById('math-container').innerHTML = `$$ ${q.latex} $$`; MathJax.typesetPromise([document.getElementById('math-container')]);
+            document.getElementById('input-area').classList.add('hidden'); document.getElementById('binary-choice-area').classList.add('hidden'); document.getElementById('choice-area').classList.add('hidden'); document.getElementById('quick-keys').classList.add('hidden');
+            document.getElementById('user-answer').value = ''; document.getElementById('user-answer').parentElement.classList.remove('ring', 'ring-green-500', 'ring-red-500');
+
+            if(q.type === 'direct' || q.type === 'indeterminate' || q.type === 'parameter') { document.getElementById('input-area').classList.remove('hidden'); document.getElementById('quick-keys').classList.remove('hidden'); document.getElementById('user-answer').focus(); } 
+            else if (q.type === 'continuity') { document.getElementById('binary-choice-area').classList.remove('hidden'); document.getElementById('binary-choice-area').classList.add('grid'); } 
+            else { document.getElementById('choice-area').classList.remove('hidden'); document.getElementById('choice-area').classList.add('grid'); }
+            
+            document.querySelectorAll('.choice-btn').forEach(btn => {
+                 btn.className.includes('p-8') ? (btn.className = `choice-btn p-8 rounded-2xl border-4 font-black text-3xl transition-all shadow-md hover:-translate-y-1 ${btn.textContent === 'SÍ' ? 'bg-green-50 border-green-200 text-green-700' : 'bg-red-50 border-red-200 text-red-700'}`)
+                 : (btn.className = "choice-btn p-4 rounded-xl bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 hover:border-game-primary font-bold text-slate-700 dark:text-slate-200 transition-all shadow-sm hover:-translate-y-1");
+            });
+        }
+
+        function transitionToNext() {
+            const card = document.getElementById('question-card'); card.classList.add('animate-slide-out');
+            setTimeout(() => {
+                state.currentQuestionIndex++;
+                if (state.currentMode !== 'endless' && state.currentQuestionIndex >= 10) { card.classList.remove('animate-slide-out'); showResults(); } 
+                else {
+                    if (state.currentMode === 'endless') state.questions.push(generateEndlessQuestion());
+                    loadQuestion(); card.classList.remove('animate-slide-out'); card.classList.add('animate-slide-in'); setTimeout(() => card.classList.remove('animate-slide-in'), 300);
+                }
+            }, 300);
+        }
+
+        function submitAnswer() {
+            if(state.isLocked) return;
+            const input = document.getElementById('user-answer');
+            let val = input.value.toLowerCase().trim().replace(',', '.');
+            
+            // Normalize infinite variations for math.js (if any)
+            if (val === 'infinit' || val === 'infinity') val = 'inf';
+
+            const q = state.questions[state.currentQuestionIndex];
+            
+            let isCorrect = q.validAnswers.some(v => v.toLowerCase() === val);
+
+            // Advanced check using math.js evaluation for symbolic answers
+            if (!isCorrect) {
+                try {
+                    const userNum = math.evaluate(val);
+                    
+                    if (q.numericAnswer !== undefined && typeof userNum === 'number' && !isNaN(userNum)) {
+                        // Handle Infinity
+                        if (!isFinite(q.numericAnswer)) {
+                             if (userNum === q.numericAnswer) isCorrect = true;
+                        } else {
+                             // Floating point tolerance
+                             if (Math.abs(userNum - q.numericAnswer) < 0.1) isCorrect = true;
+                        }
+                    }
+                } catch (e) {
+                    // Ignore math.js syntax errors
+                }
+            }
+
+            // Fallback float parsing
+            if (!isCorrect) {
+                 const valNum = parseFloat(val);
+                 if (q.numericAnswer !== undefined && !isNaN(valNum) && Math.abs(valNum - q.numericAnswer) < 0.1) {
+                     isCorrect = true;
+                 }
+            }
+
+            if(isCorrect) handleCorrect(input); else handleIncorrect(input, q);
+        }
+
+        function submitChoice(choice, btn) {
+            if(state.isLocked) return;
+            state.isLocked = true; const q = state.questions[state.currentQuestionIndex];
+            if(q.plotData) renderGraph(q.plotData, q.graphCenter);
+            if(choice === q.correctOption) { btn.classList.add('ring-4', 'ring-green-500'); handleCorrect(null, true); } 
+            else { btn.classList.add('ring-4', 'ring-red-500'); handleIncorrect(null, q, true); }
+        }
+
+        function handleCorrect(input, waitForGraph = false) {
+            state.score++; robot.setMood('happy'); robot.say("Correcte!");
+            if(input) input.parentElement.classList.add('ring', 'ring-green-500');
+            const q = state.questions[state.currentQuestionIndex];
+            if (q.type === 'parameter' && q.plotData) { renderGraph(q.plotData, q.graphCenter); waitForGraph = true; }
+            if(state.currentMode === 'endless') { if(state.score > state.endlessHighScore) { state.endlessHighScore = state.score; localStorage.setItem('limitMaster_highScore', state.score); } }
+            if(waitForGraph) document.getElementById('next-q-btn').classList.remove('hidden'); else setTimeout(transitionToNext, 1000);
+        }
+
+        function handleIncorrect(input, q, waitForGraph = false) {
+            robot.setMood('sad'); robot.say("Oh no... " + q.hint);
+            if(input) input.parentElement.classList.add('ring', 'ring-red-500');
+            if (q.type === 'parameter' && q.plotData) { renderGraph(q.plotData, q.graphCenter); waitForGraph = true; }
+            if(state.currentMode === 'endless') setTimeout(() => showResults(), 2000);
+            else if(waitForGraph) document.getElementById('next-q-btn').classList.remove('hidden'); else setTimeout(transitionToNext, 2000);
+        }
+
+        function nextQuestion() { transitionToNext(); }
+
+        function showResults() {
+            document.getElementById('game-screen').classList.add('hidden-screen'); document.getElementById('result-screen').classList.remove('hidden-screen');
+            let stars = 0;
+            if(state.currentMode === 'endless') stars = Math.floor(state.score / 3);
+            else { if(state.score >= 9) stars = 3; else if(state.score >= 7) stars = 2; else if(state.score >= 5) stars = 1; else stars = 0; }
+            document.getElementById('final-score').textContent = state.score; document.getElementById('earned-coins').textContent = stars;
+            const starContainer = document.getElementById('stars-container'); starContainer.innerHTML = '';
+            for(let i=0; i<3; i++) starContainer.innerHTML += (i < stars) ? '<span>⭐</span>' : '<span class="opacity-30 grayscale">⭐</span>';
+            state.coins += stars; saveData(); updateCurrencyUI();
+        }
+
+        function goMenu() {
+            document.getElementById('game-screen').classList.add('hidden-screen'); document.getElementById('shop-screen').classList.add('hidden-screen');
+            document.getElementById('result-screen').classList.add('hidden-screen'); document.getElementById('menu-screen').classList.remove('hidden-screen');
+            renderTeacherVisuals(); document.getElementById('menu-high-score').textContent = state.endlessHighScore;
+        }
+        function exitGame() { if(confirm("Sortir?")) goMenu(); }
+        function addInput(v) { const el = document.getElementById('user-answer'); el.value += v; el.focus(); }
+
+        // --- GENERATORS ---
+        function getRandomInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+        function getRandomNonZero(limit) { let n = 0; while(n===0) n = getRandomInt(-limit, limit); return n; }
+
+        function formatCoeff(c) {
+            if (c === 1) return '';
+            if (c === -1) return '-';
+            return c.toString();
+        }
+
+        function generateDirectLimit() {
+            const r = Math.random(); const x = getRandomInt(-3, 5); let l, a, h, numeric;
+            if(r<0.4) { 
+                const c=getRandomNonZero(3), p=getRandomInt(1,2), v=getRandomInt(-5,5); 
+                const xTerm = p === 1 ? 'x' : `x^${p}`;
+                const cStr = formatCoeff(c);
+                l=`\\lim_{x \\to ${x}} (${cStr}${xTerm} ${v>=0?'+':''}${v})`; 
+                numeric = c*Math.pow(x,p)+v;
+                a=[numeric.toString()]; 
+                h="Substitueix."; 
+            }
+            // FIX: Canviem e^x a exp(x) en el plotFn per a mathjs
+            else if(r<0.7) { 
+                const add=getRandomInt(-5,5); 
+                l=`\\lim_{x \\to ${x}} (e^x ${add>=0?'+':''}${add})`; 
+                numeric = Math.exp(x)+add;
+                a=[numeric.toFixed(2), numeric.toString()]; 
+                if(x===0) a.push((1+add).toString()); 
+                h="e^0 = 1"; 
+            }
+            else { 
+                const sx=(x<=0)?getRandomInt(1,5):x, ia=(x<=0)?0:getRandomInt(0,2); 
+                l=`\\lim_{x \\to ${sx}} (\\ln(x ${ia>=0?'+':''}${ia}))`; 
+                numeric = Math.log(sx+ia);
+                a=[numeric.toFixed(2)]; 
+                if((sx+ia)===1) a.push("0"); 
+                h="ln(1)=0"; 
+            }
+            return {latex:l, validAnswers:a, numericAnswer: numeric, hint:h, type:'direct'};
+        }
+        function generateIndeterminateLimit() {
+            const n=getRandomInt(1,3), m=getRandomInt(1,3), c=getRandomInt(1,9), d=getRandomInt(1,9);
+            // Hide exponent 1 and coeff 1
+            const numX = n === 1 ? 'x' : `x^${n}`;
+            const denX = m === 1 ? 'x' : `x^${m}`;
+            const cStr = formatCoeff(c);
+            const dStr = formatCoeff(d);
+            
+            let numeric;
+            let l=`\\lim_{x \\to \\infty} \\frac{${cStr}${numX} + ${getRandomInt(1,5)}}{${dStr}${denX} + ${getRandomInt(1,5)}}`, a, h;
+            
+            if(n>m){
+                a=['inf','+inf'];h='Grau num > den';
+                numeric = Infinity;
+            } else if(n<m){
+                a=['0'];h='Grau num < den';
+                numeric = 0;
+            } else {
+                const r=c/d; 
+                a=[r.toString(), r.toFixed(2)]; 
+                if(c%d===0) a.push((c/d).toString()); else a.push(`${c}/${d}`); 
+                h='Divideix coefs';
+                numeric = r;
+            }
+            return {latex:l, validAnswers:a, numericAnswer: numeric, hint:h, type:'indeterminate'};
+        }
+        
+        // --- GENERATOR HELPER: Generates a single, distinct function piece ---
+        function generateFunctionPiece(c, excludedType) {
+            // Eliminem 'rational' ja que pot causar discontinuïtats de domini innecessàries i problemes d'avaluació amb mathjs.
+            const types = ['poly', 'sqrt', 'exp', 'log', 'abs', 'trig'];
+            let type;
+            let attempts = 0;
+            // Declarem 'deg' aquí perquè sigui visible en l'àmbit de la funció.
+            let deg = null; 
+
+            // Ensure type is different from excludedType (and not just poly if poly is excluded)
+            do {
+                type = types[getRandomInt(0, types.length - 1)];
+                attempts++;
+                if (excludedType === 'poly' && type === 'poly' && Math.random() < 0.8) {
+                    type = 'exp'; // Force non-poly if poly is excluded
+                } else if (excludedType === 'linear' && type === 'poly' && Math.random() < 0.8) {
+                    type = 'exp';
+                }
+            } while (type === excludedType && attempts < 5);
+
+
+            let fnStr, latexStr, plotFn;
+
+            if (type === 'poly') {
+                deg = getRandomInt(1, 2); // Assignem el valor dins del bloc poly
+                const a = getRandomNonZero(2), b = getRandomInt(-3, 3);
+                const aStr = formatCoeff(a);
+
+                if (deg === 1) {
+                    fnStr = `${a}x + ${b}`;
+                    latexStr = `${aStr}x ${b>=0?'+':''}${b}`;
+                    plotFn = `${a}*x + ${b}`;
+                } else {
+                    fnStr = `${a}x^2 + ${b}`;
+                    latexStr = `${aStr}x^2 ${b>=0?'+':''}${b}`;
+                    plotFn = `${a}*x^2 + ${b}`;
+                }
+            } else if (type === 'exp') {
+                const add = getRandomInt(0, 2);
+                // FIX: Utilitzem exp(x) en la representació de la funció per evitar que mathjs interpreti 'e' com una funció a l'avaluar la cadena.
+                fnStr = `exp(x) + ${add}`; 
+                latexStr = `e^x ${add>0?'+':''}${add}`;
+                plotFn = `exp(x) + ${add}`; 
+            } else if (type === 'log') {
+                // FIX: Ensure x - shift > 0 at x=c. So c - shift > 0 => shift < c.
+                const offset = getRandomInt(1, 3);
+                const shift = c - offset;
+                fnStr = `ln(x - ${shift})`;
+                // Add parens if negative
+                const shiftStr = shift < 0 ? `(${shift})` : shift;
+                latexStr = `\\ln(x - ${shiftStr})`;
+                plotFn = `log(x - (${shift}))`; // Correct parentheses for evaluation safety
+            } else if (type === 'sqrt') {
+                const sign = (Math.random() < 0.5) ? '-' : '';
+                const shift = c + 1; // Ensures domain on one side
+                const innerVal = c - 1;
+                const innerStr = innerVal < 0 ? `(${innerVal})` : innerVal;
+                fnStr = `${sign}\\sqrt{x - ${innerVal}}`;
+                latexStr = `${sign}\\sqrt{x - ${innerStr}}`;
+                plotFn = `${sign}sqrt(x - (${innerVal}))`;
+            } else if (type === 'abs') {
+                const add = getRandomInt(-2, 2);
+                fnStr = `|x - ${add}|`;
+                const addStr = add < 0 ? `(${add})` : add;
+                latexStr = `|x - ${addStr}|`;
+                plotFn = `abs(x - ${add})`;
+            } else if (type === 'trig') {
+                const amplitude = getRandomNonZero(2);
+                const ampStr = formatCoeff(amplitude);
+                fnStr = `${amplitude}*sin(x)`;
+                latexStr = `${ampStr}\\sin(x)`;
+                plotFn = `${amplitude}*sin(x)`;
+            }
+
+            // Extract complexity level for better type matching later
+            const complexity = type === 'poly' && deg === 1 ? 'linear' : type;
+            
+            return { fnStr, latexStr, plotFn, type: complexity };
+        }
+
+        function generateContinuityCheck() {
+            const c = getRandomInt(-4, 4);
+            const side1 = Math.random() > 0.5 ? 'left' : 'right';
+            const side2 = side1 === 'left' ? 'right' : 'left';
+            
+            const piece1 = generateFunctionPiece(c, null);
+            let piece2;
+            let attempts = 0;
+            
+            // Force the second piece to be a different *fundamental* type
+            do {
+                piece2 = generateFunctionPiece(c, piece1.type);
+                attempts++;
+            } while (piece2.type === piece1.type && attempts < 5);
+
+
+            // FIX: Pass 'x' as scope variable to avoid regex replacement issues with function names like 'exp'
+            const valC1 = math.evaluate(piece1.plotFn, { x: c });
+            const valC2 = math.evaluate(piece2.plotFn, { x: c });
+
+            const isContinuous = Math.random() > 0.5;
+            let offset = 0;
+            
+            // Ensure values are numbers before comparing
+            const numValC1 = (valC1 && typeof valC1 === 'object' && 're' in valC1) ? valC1.re : Number(valC1);
+            const numValC2 = (valC2 && typeof valC2 === 'object' && 're' in valC2) ? valC2.re : Number(valC2);
+
+            if (isContinuous) {
+                // If the values are already equal, just use them.
+                if (Math.abs(numValC1 - numValC2) < 0.01) {
+                    offset = 0;
+                } else {
+                    // Force piece2 to match piece1 (e.g., if piece2 was 5 and piece1 is 3, piece2 needs a -2 offset)
+                    offset = numValC1 - numValC2;
+                    piece2.latexStr = piece2.latexStr + (offset >= 0 ? ` + ${Math.abs(offset).toFixed(1)}` : ` - ${Math.abs(offset).toFixed(1)}`);
+                    piece2.plotFn = piece2.plotFn + (offset >= 0 ? ` + ${Math.abs(offset).toFixed(1)}` : ` - ${Math.abs(offset).toFixed(1)}`);
+                }
+            } else {
+                // Force a discontinuity (offset of at least 1)
+                offset = (numValC1 - numValC2) + getRandomNonZero(2);
+                piece2.latexStr = piece2.latexStr + (offset >= 0 ? ` + ${Math.abs(offset).toFixed(1)}` : ` - ${Math.abs(offset).toFixed(1)}`);
+                piece2.plotFn = piece2.plotFn + (offset >= 0 ? ` + ${Math.abs(offset).toFixed(1)}` : ` - ${Math.abs(offset).toFixed(1)}`);
+            }
+            
+            const [latexFn1, latexFn2] = side1 === 'left' ? [piece1.latexStr, piece2.latexStr] : [piece2.latexStr, piece1.latexStr];
+            const [plotFn1, plotFn2] = side1 === 'left' ? [piece1.plotFn, piece2.plotFn] : [piece2.plotFn, piece1.plotFn];
+            
+            const latex = `f(x) = \\begin{cases} ${latexFn1} & x < ${c} \\\\ ${latexFn2} & x \\ge ${c} \\end{cases}`;
+
+            return {
+                latex: `\\text{És contínua en } x=${c}? \\\\ ${latex}`,
+                correctOption: isContinuous ? 'yes' : 'no',
+                hint: "Límits laterals. Compte amb el tipus de funció!",
+                type: 'continuity',
+                graphCenter: c,
+                plotData: [
+                    { fn: plotFn1, range: [-10 + c, c], color: 'red' }, 
+                    { fn: plotFn2, range: [c, 10 + c], color: 'blue' }
+                ]
+            };
+        }
+
+        function generateDiscontinuityProblem(forcedType) {
+            const types = ['evitable', 'salt_finit', 'salt_infinit', '2a_especie'];
+            const type = forcedType || types[Math.floor(Math.random() * types.length)];
+            let c = getRandomInt(-3, 3); let latex, hint, plotData;
+            if (type === 'evitable') {
+                if(c===0 && Math.random()>0.5) { latex=`f(x) = \\frac{\\sin(x)}{x}, x=0`; plotData=[{fn:'sin(x)/x', color:'orange'}]; }
+                else { 
+                    if(c===0) c=1; const c2=c*c; 
+                    const denStr = c < 0 ? `x - (${c})` : `x - ${c}`;
+                    latex=`f(x) = \\frac{x^2 - ${c2}}{${denStr}}, x=${c}`; 
+                    plotData=[{fn:`(x^2-${c2})/(x-${c})`, color:'orange'}]; 
+                }
+                hint="Forat o simplificable.";
+            } else if (type === 'salt_finit') {
+                const g=getRandomNonZero(2);
+                const piece1 = generateFunctionPiece(c, null);
+                let piece2;
+                let attempts = 0;
+                do {
+                    piece2 = generateFunctionPiece(c, piece1.type);
+                    attempts++;
+                } while (piece2.type === piece1.type && attempts < 5);
+
+                // FIX: Pass 'x' as scope variable to avoid regex replacement issues with function names like 'exp'
+                const valC1 = math.evaluate(piece1.plotFn, { x: c });
+                // Ensure number
+                const numValC1 = (valC1 && typeof valC1 === 'object' && 're' in valC1) ? valC1.re : Number(valC1);
+
+                // Target value C2 must be different from C1+g
+                const targetC2 = numValC1 + g;
+                
+                // Solve K for piece2 such that it equals targetC2 at x=c.
+                // For simplicity, let's use the actual value directly as offset
+                
+                // FIX: Pass 'x' as scope variable
+                const currentValC2 = math.evaluate(piece2.plotFn, { x: c });
+                const numValC2 = (currentValC2 && typeof currentValC2 === 'object' && 're' in currentValC2) ? currentValC2.re : Number(currentValC2);
+
+                const requiredOffset = targetC2 - numValC2;
+                
+                piece2.latexStr = piece2.latexStr + (requiredOffset >= 0 ? ` + ${Math.abs(requiredOffset).toFixed(1)}` : ` - ${Math.abs(requiredOffset).toFixed(1)}`);
+                piece2.plotFn = piece2.plotFn + (requiredOffset >= 0 ? ` + ${Math.abs(requiredOffset).toFixed(1)}` : ` - ${Math.abs(requiredOffset).toFixed(1)}`);
+
+                latex=`f(x) = \\begin{cases} ${piece1.latexStr} & x < ${c} \\\\ ${piece2.latexStr} & x \\ge ${c} \\end{cases}`; 
+                plotData=[{fn:piece1.plotFn, range:[-10+c,c], color:'red'},{fn:piece2.plotFn, range:[c,10+c], color:'blue'}];
+                hint="Salt.";
+            } else if (type === 'salt_infinit') {
+                const sq=Math.random()>0.5; 
+                const term = c < 0 ? `x - (${c})` : `x - ${c}`;
+                latex=`f(x) = \\frac{1}{(${term})${sq?'^2':''}}, x=${c}`; 
+                plotData=[{fn:`1/(x-${c})${sq?'^2':''}`, color:'purple'}]; 
+                hint="Asímptota.";
+            } else {
+                const dir=Math.random()>0.5; 
+                // Handles x - (-c) logic naturally if constructed properly, but let's be safe
+                // dir=true: x-c. dir=false: c-x.
+                let innerStr;
+                if (dir) {
+                    // x - c
+                    innerStr = c < 0 ? `x - (${c})` : `x - ${c}`;
+                } else {
+                    // c - x
+                    innerStr = `${c} - x`; // No double minus issue here usually unless c starts with - which is fine at start
+                }
+                latex=`f(x) = \\sqrt{${innerStr}}, x=${c}`; 
+                plotData=[{fn:`sqrt(${dir?`x-(${c})`:`${c}-x`})`, range:dir?[c,10]:[-10,c], color:'green'}]; 
+                hint="Domini.";
+            }
+            return { latex: `\\text{Classifica:} \\\\ ${latex}`, correctOption: type, hint: hint, type: 'discontinuity', graphCenter: c, plotData: plotData };
+        }
+        function generateParameterProblem() {
+            const c = getRandomInt(-3, 3); 
+            const sideFixed = Math.random() > 0.5 ? 'left' : 'right';
+
+            // Generate two fundamentally different pieces
+            const fixedPiece = generateFunctionPiece(c, null);
+            let variablePiece;
+            let attempts = 0;
+            do {
+                variablePiece = generateFunctionPiece(c, fixedPiece.type);
+                attempts++;
+            } while (variablePiece.type === fixedPiece.type && attempts < 5);
+
+
+            // 1. Calculate the target value from the fixed side
+            // FIX: Pass 'x' as scope variable to avoid regex replacement issues with function names like 'exp'
+            const val = math.evaluate(fixedPiece.plotFn, { x: c });
+            // FIX: Ensure targetVal is a primitive Number so toFixed works. MathJS might return Complex/BigNumber.
+            const targetVal = (val && typeof val === 'object' && 're' in val) ? val.re : Number(val);
+
+            // 2. Variable Side Setup (contains k)
+            let variableFnStr, kVal, variableLatexStr;
+            const kChar = (Math.random() < 0.5) ? 'k' : (Math.random() < 0.5 ? 'a' : 'b'); // Use k, a, or b
+            
+            // Choose type of equation for variable piece
+            const varType = getRandomInt(0, 2); // 0: Linear (x+k), 1: Multiplicative (kx), 2: Constant (k)
+
+            if(varType === 0) { // x + k
+                kVal = targetVal - c;
+                variableFnStr = `x + ${kChar}`;
+                variableLatexStr = `x + ${kChar}`;
+            } else if (varType === 1 && Math.abs(c) > 0.1) { // kx (needs c != 0)
+                 kVal = targetVal / c;
+                 variableFnStr = `${kChar}*x`;
+                 variableLatexStr = `${kChar}x`;
+            } else { // Constant k
+                 kVal = targetVal;
+                 variableFnStr = `${kChar}`;
+                 variableLatexStr = `${kChar}`;
+            }
+            
+            // Round k for input
+            kVal = Math.round(kVal * 100) / 100;
+            
+            // Re-calculate variable side string with actual value for plotting
+            const solvedVarFnStr = variableFnStr.replace(kChar, kVal).replace(`${kChar}*x`, `(${kVal})*x`);
+
+
+            // Assemble final latex string
+            let latex;
+            const fixedLatexStr = fixedPiece.latexStr;
+
+            if(sideFixed === 'left') {
+                latex = `f(x) = \\begin{cases} ${fixedLatexStr} & x < ${c} \\\\ ${variableLatexStr} & x \\ge ${c} \\end{cases}`;
+                fn1 = fixedPiece.plotFn; fn2 = solvedVarFnStr;
+            } else {
+                latex = `f(x) = \\begin{cases} ${variableLatexStr} & x < ${c} \\\\ ${fixedLatexStr} & x \\ge ${c} \\end{cases}`;
+                fn1 = solvedVarFnStr; fn2 = fixedPiece.plotFn;
+            }
+            
+            return { 
+                latex: `\\text{Troba } ${kChar} \\text{ per continuïtat:} \\\\ ${latex}`, 
+                validAnswers: [kVal.toString()], 
+                numericAnswer: kVal,
+                hint: `Iguala límits a x=${c}. Recorda que $x=${c}$ i ${variableLatexStr} = ${targetVal.toFixed(2)}.`, 
+                type: 'parameter', 
+                graphCenter: c, 
+                plotData: [{ fn: fn1, range: [-10 + c, c], color: 'red' }, { fn: fn2, range: [c, 10 + c], color: 'blue' }] 
+            };
+        }
+        function generateEndlessQuestion() {
+            const r=Math.random(); if(r<0.2) return generateDirectLimit(); if(r<0.4) return generateIndeterminateLimit(); if(r<0.6) return generateContinuityCheck(); if(r<0.8) return generateDiscontinuityProblem(); return generateParameterProblem();
+        }
+        function renderGraph(d, centerX = 0){
+            // Use 5 units left and right of the center point for x-axis domain
+            const xDomain = [centerX - 5, centerX + 5];
+            try{functionPlot({target:'#feedback-graph',width:300,height:200,yAxis:{domain:[-5,10]},xAxis:{domain:xDomain},grid:true,data:d.map?d.map(i=>({graphType:'polyline',...i})):[{fn:d.fn}]}); document.getElementById('graph-container').classList.remove('hidden');}catch(e){}
+        }
+    </script>
+</body>
+</html>
